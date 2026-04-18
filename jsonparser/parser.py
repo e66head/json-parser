@@ -17,17 +17,26 @@ class JsonParser():
 
     def __init__(self, json_str):
         self._lexer = JsonLexer(json_str)
-        self._stack = Stack()
+        self._main_stack = Stack()
+        self._open_stack = Stack()
         self._logger = logging.getLogger(__name__)
 
     def _handle_object(self):
         """Handles the construction of the dictionary from the JSON object when a right brace token is encountered."""
 
-        # Pop everything off the stack in FIFO order from the first left brace to the top of the stack.
+        # Get the the most recent opening token from the open stack. This should be the left brace corresponding to the
+        # right brace that triggered this reduce operation. 
         try:
-            token_array = self._stack.pop_from_item(lambda token: token.type == TokenType.LBRACE)
+            index, token = self._open_stack.pop()
         except IndexError as exc:
-            raise MissingLeftBraceError("Unexpected end of object during object reduce.") from exc
+            raise MissingLeftBraceError("Unexpected right brace without matching left brace.") from exc
+
+        if token.type != TokenType.LBRACE:
+            raise MissingLeftBraceError(f"Unexpected token {token} when expecting a left brace.")
+
+        # Pop everything off the main stack in FIFO order from the first left brace to the top of the stack.
+        depth = self._main_stack.size() - index
+        token_array = self._main_stack.pop_from_depth(depth)
 
         expected = TokenType.LBRACE  # Set the expectation that the first item in the tokens array is a left brace.
         dictionary = {}
@@ -68,16 +77,24 @@ class JsonParser():
             else:
                 raise UnexpectedTokenError(f"Unexpected token {token} in object. Expected {expected.name}.")
 
-        self._stack.push(Token(TokenType.VALUE, dictionary, token_array[0].line))
+        self._main_stack.push(Token(TokenType.VALUE, dictionary, token_array[0].line))
 
     def _handle_array(self):
         """Handles the construction of the list from the JSON array when a right bracket token is encountered."""
 
-        # Pop everything off the stack in FIFO order from the first left bracket to the top of the stack.
+        # Get the the most recent opening token from the open stack. This should be the left bracket corresponding to
+        # the right bracket that triggered this reduce operation. 
         try:
-            token_array = self._stack.pop_from_item(lambda token: token.type == TokenType.LBRACKET)
+            index, token = self._open_stack.pop()
         except IndexError as exc:
-            raise MissingLeftBracketError("Unexpected end of array during array reduce.") from exc
+            raise MissingLeftBracketError("Unexpected right bracket without matching left bracket.") from exc
+
+        if token.type != TokenType.LBRACKET:
+            raise MissingLeftBracketError(f"Unexpected token {token} when expecting a left bracket.")
+
+        # Pop everything off the main stack in FIFO order from the first left bracket to the top of the stack.
+        depth = self._main_stack.size() - index
+        token_array = self._main_stack.pop_from_depth(depth)
 
         expected = TokenType.LBRACKET
         array = []
@@ -122,23 +139,29 @@ class JsonParser():
             else:
                 raise UnexpectedTokenError(f"Unexpected token {token} in array. Expected {expected.name}.")
 
-        self._stack.push(Token(TokenType.VALUE, array, token_array[0].line))
+        self._main_stack.push(Token(TokenType.VALUE, array, token_array[0].line))
+
+    def _handle_opening_token(self):
+        """Handles a token representing the opening brace or bracket of an object or array."""
+        index = self._main_stack.size() - 1   # The index into the main stack (from the "bottom") of the opening token.
+        token = self._main_stack.peek()       # This is the opening token that was just pushed onto the main stack.
+        self._open_stack.push((index, token))
 
     def _handle_eof(self):
         """Handles cleaning up the stack when an end-of-file token is encountered."""
 
-        self._stack.pop() # Pop the EOF token and throw it away.
+        self._main_stack.pop() # Pop the EOF token and throw it away.
 
-        if self._stack.size() == 1 and self._stack.peek().is_value():
+        if self._main_stack.size() == 1 and self._main_stack.peek().is_value():
             return # Successfully parsed JSON value.
 
-        if self._stack.is_empty():
+        if self._main_stack.is_empty():
             raise ExtraDataError("Unexpected end of JSON input. No data found.")
 
-        if self._stack[0].type == TokenType.LBRACE:
+        if self._main_stack[0].type == TokenType.LBRACE:
             raise MissingRightBraceError("Unexpected end of object. Missing right brace.")
 
-        if self._stack[0].type == TokenType.LBRACKET:
+        if self._main_stack[0].type == TokenType.LBRACKET:
             raise MissingRightBracketError("Unexpected end of array. Missing right bracket.")
 
         raise ExtraDataError("Unexpected end of JSON input. Extra data found.")
@@ -155,7 +178,7 @@ class JsonParser():
         for token in self._lexer.tokenize():
             self._logger.debug("Received token: %s", token)
 
-            self._stack.push(token)
+            self._main_stack.push(token)
 
             match token.type:
 
@@ -165,9 +188,12 @@ class JsonParser():
                 case TokenType.RBRACKET:
                     self._handle_array()
 
+                case TokenType.LBRACE | TokenType.LBRACKET:
+                    self._handle_opening_token()
+
                 case TokenType.EOF:
                     self._handle_eof()
 
-        token = self._stack.pop() # This should be the final token holding the fully parsed JSON value.
+        token = self._main_stack.pop() # This should be the final token holding the fully parsed JSON value.
 
         return token.value
