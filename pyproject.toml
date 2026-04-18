@@ -1,13 +1,13 @@
 [project]
 name = "jsonparser"
-version = "0.1.0"
+version = "0.0.1"
 description = "A custom JSON parser written in Python for educational purposes."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 license-files = ["LICENSE"]
 authors = [
-  { name = "Jason Gregg" }
+  { name = "e66head" }
 ]
 dependencies = []
 

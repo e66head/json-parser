@@ -1,9 +1,10 @@
 """
 Custom exception classes for handling errors in a JSON lexer and parser.
 
-This module defines a hierarchy of exception classes for reporting specific errors encountered during the lexical analysis and parsing of JSON data. It
-includes base exception classes for both the lexer and parser, as well as specialized exceptions for various error conditions such as unexpected tokens,
-invalid characters, malformed numbers, and structural issues in JSON objects and arrays.
+This module defines a hierarchy of exception classes for reporting specific errors encountered during the lexical
+analysis and parsing of JSON data. It includes base exception classes for both the lexer and parser, as well as
+specialized exceptions for various error conditions such as unexpected tokens, invalid characters, malformed numbers,
+and structural issues in JSON objects and arrays.
 
 Classes:
     JsonLexerError: Base exception for lexer-related errors.
@@ -15,6 +16,9 @@ Classes:
 
 class JsonLexerError(Exception):
     """Base exception for JsonLexer errors."""
+
+class UnexpectedCharacterError(JsonLexerError):
+    pass
 
 class EndOfJsonError(JsonLexerError):
     pass
@@ -94,6 +98,9 @@ class FractionError(JsonLexerError):
 class ExponentError(JsonLexerError):
     pass
 
+class MissingValueError(JsonLexerError):
+    pass
+
 class JsonParserError(Exception):
     """Base exception for JsonParser errors."""
 
@@ -101,4 +108,34 @@ class UnknownEventError(JsonParserError):
     pass
 
 class InvalidStateError(JsonParserError):
+    pass
+
+class MissingLeftBracketError(JsonParserError):
+    pass
+
+class MissingRightBracketError(JsonParserError):
+    pass
+
+class MissingLeftBraceError(JsonParserError):
+    pass
+
+class MissingRightBraceError(JsonParserError):
+    pass
+
+class MissingCommaError(JsonParserError):
+    pass
+
+class TrailingCommaError(JsonParserError):
+    pass
+
+class LeadingCommaError(JsonParserError):
+    pass
+
+class ExtraCommaError(JsonParserError):
+    pass
+
+class UnexpectedTokenError(JsonParserError):
+    pass
+
+class ExtraDataError(JsonParserError):
     pass
