@@ -1,0 +1,35 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Installer and packaging artifacts
+*.egg-info/
+dist/
+build/
+
+# Test cache
+.pytest_cache/
+
+# Editor and OS files
+*.swp
+*.swo
+*.bak
+.DS_Store
+Thumbs.db
+
+# IDE-specific
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Project-specific (optional)
+jsonparser_project.zip
