@@ -28,9 +28,9 @@ def test_parser_valid_array(valid_json, expected_result):
     ("[1, , 2]", ExtraCommaError,          "Unexpected comma when expecting a value"),
     ("[1, 2,]",  TrailingCommaError,       "Unexpected trailing comma"),
     ("[1 2]",    MissingCommaError,        "Unexpected value when expecting a comma"),
-    ("]",        MissingLeftBracketError,  "Unexpected end of array"),
+    ("]",        MissingLeftBracketError,  "Unexpected right bracket without matching left bracket"),
     ("[",        MissingRightBracketError, "Unexpected end of array"),
-    ("1, 2]",    MissingLeftBracketError,  "Unexpected end of array"),
+    ("1, 2]",    MissingLeftBracketError,  "Unexpected right bracket without matching left bracket"),
 ])
 def test_parser_array_errors(invalid_json, expected_error, expected_match):
     """Ensures that various malformed arrays raise specific errors with helpful messages."""

@@ -1,0 +1,345 @@
+[
+  {
+    "depth": 10,
+    "breadth": 10,
+    "custom_time": 0.000944900035392493,
+    "builtin_time": 1.7499958630651236e-05,
+    "size_kb": 1.1708984375
+  },
+  {
+    "depth": 10,
+    "breadth": 50,
+    "custom_time": 0.0034298000391572714,
+    "builtin_time": 2.7999980375170708e-05,
+    "size_kb": 5.4677734375
+  },
+  {
+    "depth": 10,
+    "breadth": 100,
+    "custom_time": 0.0074183999677188694,
+    "builtin_time": 5.770003190264106e-05,
+    "size_kb": 10.8388671875
+  },
+  {
+    "depth": 10,
+    "breadth": 200,
+    "custom_time": 0.01357010001083836,
+    "builtin_time": 7.259997073560953e-05,
+    "size_kb": 22.5576171875
+  },
+  {
+    "depth": 10,
+    "breadth": 300,
+    "custom_time": 0.021617599995806813,
+    "builtin_time": 0.00011189997894689441,
+    "size_kb": 34.2763671875
+  },
+  {
+    "depth": 10,
+    "breadth": 400,
+    "custom_time": 0.027994200005196035,
+    "builtin_time": 0.00014050002209842205,
+    "size_kb": 45.9951171875
+  },
+  {
+    "depth": 10,
+    "breadth": 500,
+    "custom_time": 0.034797500004060566,
+    "builtin_time": 0.00017969997134059668,
+    "size_kb": 57.7138671875
+  },
+  {
+    "depth": 50,
+    "breadth": 10,
+    "custom_time": 0.004181399999652058,
+    "builtin_time": 3.1400006264448166e-05,
+    "size_kb": 5.8583984375
+  },
+  {
+    "depth": 50,
+    "breadth": 50,
+    "custom_time": 0.018300499999895692,
+    "builtin_time": 9.779998799785972e-05,
+    "size_kb": 27.3427734375
+  },
+  {
+    "depth": 50,
+    "breadth": 100,
+    "custom_time": 0.033963399997446686,
+    "builtin_time": 0.00018199998885393143,
+    "size_kb": 54.1982421875
+  },
+  {
+    "depth": 50,
+    "breadth": 200,
+    "custom_time": 0.0695978999719955,
+    "builtin_time": 0.0003573999856598675,
+    "size_kb": 112.7919921875
+  },
+  {
+    "depth": 50,
+    "breadth": 300,
+    "custom_time": 0.10377330001210794,
+    "builtin_time": 0.0005136000108905137,
+    "size_kb": 171.3857421875
+  },
+  {
+    "depth": 50,
+    "breadth": 400,
+    "custom_time": 0.14084010000806302,
+    "builtin_time": 0.000714500027243048,
+    "size_kb": 229.9794921875
+  },
+  {
+    "depth": 50,
+    "breadth": 500,
+    "custom_time": 0.17231059999903664,
+    "builtin_time": 0.0008882000111043453,
+    "size_kb": 288.5732421875
+  },
+  {
+    "depth": 100,
+    "breadth": 10,
+    "custom_time": 0.00875630002701655,
+    "builtin_time": 7.100001676008105e-05,
+    "size_kb": 11.71875
+  },
+  {
+    "depth": 100,
+    "breadth": 50,
+    "custom_time": 0.03628469997784123,
+    "builtin_time": 0.00018620002083480358,
+    "size_kb": 54.6875
+  },
+  {
+    "depth": 100,
+    "breadth": 100,
+    "custom_time": 0.06805560004431754,
+    "builtin_time": 0.0003483999753370881,
+    "size_kb": 108.3984375
+  },
+  {
+    "depth": 100,
+    "breadth": 200,
+    "custom_time": 0.13977449998492375,
+    "builtin_time": 0.0010871000122278929,
+    "size_kb": 225.5859375
+  },
+  {
+    "depth": 100,
+    "breadth": 300,
+    "custom_time": 0.21529180003562942,
+    "builtin_time": 0.0010701999999582767,
+    "size_kb": 342.7734375
+  },
+  {
+    "depth": 100,
+    "breadth": 400,
+    "custom_time": 0.2948896000161767,
+    "builtin_time": 0.001408300013281405,
+    "size_kb": 459.9609375
+  },
+  {
+    "depth": 100,
+    "breadth": 500,
+    "custom_time": 0.3569590000552125,
+    "builtin_time": 0.00223730003926903,
+    "size_kb": 577.1484375
+  },
+  {
+    "depth": 200,
+    "breadth": 10,
+    "custom_time": 0.017126600025221705,
+    "builtin_time": 0.00023769994731992483,
+    "size_kb": 23.53515625
+  },
+  {
+    "depth": 200,
+    "breadth": 50,
+    "custom_time": 0.0696122000226751,
+    "builtin_time": 0.00036019994877278805,
+    "size_kb": 109.47265625
+  },
+  {
+    "depth": 200,
+    "breadth": 100,
+    "custom_time": 0.1390232000267133,
+    "builtin_time": 0.0007136000203900039,
+    "size_kb": 216.89453125
+  },
+  {
+    "depth": 200,
+    "breadth": 200,
+    "custom_time": 0.2930651999777183,
+    "builtin_time": 0.0014392000157386065,
+    "size_kb": 451.26953125
+  },
+  {
+    "depth": 200,
+    "breadth": 300,
+    "custom_time": 0.44120569998631254,
+    "builtin_time": 0.0023794000153429806,
+    "size_kb": 685.64453125
+  },
+  {
+    "depth": 200,
+    "breadth": 400,
+    "custom_time": 0.5667985000181943,
+    "builtin_time": 0.0033124000183306634,
+    "size_kb": 920.01953125
+  },
+  {
+    "depth": 200,
+    "breadth": 500,
+    "custom_time": 0.7038584000547417,
+    "builtin_time": 0.0047506000264547765,
+    "size_kb": 1154.39453125
+  },
+  {
+    "depth": 300,
+    "breadth": 10,
+    "custom_time": 0.026007200009189546,
+    "builtin_time": 0.00019339995924383402,
+    "size_kb": 35.3515625
+  },
+  {
+    "depth": 300,
+    "breadth": 50,
+    "custom_time": 0.10388419998344034,
+    "builtin_time": 0.0005397999775595963,
+    "size_kb": 164.2578125
+  },
+  {
+    "depth": 300,
+    "breadth": 100,
+    "custom_time": 0.2075633000349626,
+    "builtin_time": 0.0011594999814406037,
+    "size_kb": 325.390625
+  },
+  {
+    "depth": 300,
+    "breadth": 200,
+    "custom_time": 0.4159722000476904,
+    "builtin_time": 0.002437999995891005,
+    "size_kb": 676.953125
+  },
+  {
+    "depth": 300,
+    "breadth": 300,
+    "custom_time": 0.6181530000176281,
+    "builtin_time": 0.003893399960361421,
+    "size_kb": 1028.515625
+  },
+  {
+    "depth": 300,
+    "breadth": 400,
+    "custom_time": 0.8350731999962591,
+    "builtin_time": 0.005364999989978969,
+    "size_kb": 1380.078125
+  },
+  {
+    "depth": 300,
+    "breadth": 500,
+    "custom_time": 1.0647711000056006,
+    "builtin_time": 0.007403100025840104,
+    "size_kb": 1731.640625
+  },
+  {
+    "depth": 400,
+    "breadth": 10,
+    "custom_time": 0.03406189999077469,
+    "builtin_time": 0.00034470000537112355,
+    "size_kb": 47.16796875
+  },
+  {
+    "depth": 400,
+    "breadth": 50,
+    "custom_time": 0.13863179995678365,
+    "builtin_time": 0.0007180999964475632,
+    "size_kb": 219.04296875
+  },
+  {
+    "depth": 400,
+    "breadth": 100,
+    "custom_time": 0.2770471000112593,
+    "builtin_time": 0.0016028000391088426,
+    "size_kb": 433.88671875
+  },
+  {
+    "depth": 400,
+    "breadth": 200,
+    "custom_time": 0.5733618999947794,
+    "builtin_time": 0.0032808000105433166,
+    "size_kb": 902.63671875
+  },
+  {
+    "depth": 400,
+    "breadth": 300,
+    "custom_time": 0.8472988000139594,
+    "builtin_time": 0.005406200012657791,
+    "size_kb": 1371.38671875
+  },
+  {
+    "depth": 400,
+    "breadth": 400,
+    "custom_time": 1.1107576999929734,
+    "builtin_time": 0.006987200002186,
+    "size_kb": 1840.13671875
+  },
+  {
+    "depth": 400,
+    "breadth": 500,
+    "custom_time": 1.3885853000101633,
+    "builtin_time": 0.009820799983572215,
+    "size_kb": 2308.88671875
+  },
+  {
+    "depth": 500,
+    "breadth": 10,
+    "custom_time": 0.04227440000977367,
+    "builtin_time": 0.0003892999957315624,
+    "size_kb": 58.984375
+  },
+  {
+    "depth": 500,
+    "breadth": 50,
+    "custom_time": 0.17514840001240373,
+    "builtin_time": 0.0009309999877586961,
+    "size_kb": 273.828125
+  },
+  {
+    "depth": 500,
+    "breadth": 100,
+    "custom_time": 0.34761539997998625,
+    "builtin_time": 0.0019833000260405242,
+    "size_kb": 542.3828125
+  },
+  {
+    "depth": 500,
+    "breadth": 200,
+    "custom_time": 0.705749399960041,
+    "builtin_time": 0.00405670003965497,
+    "size_kb": 1128.3203125
+  },
+  {
+    "depth": 500,
+    "breadth": 300,
+    "custom_time": 1.061332900018897,
+    "builtin_time": 0.006492900021839887,
+    "size_kb": 1714.2578125
+  },
+  {
+    "depth": 500,
+    "breadth": 400,
+    "custom_time": 1.4166826999862678,
+    "builtin_time": 0.009152200014796108,
+    "size_kb": 2300.1953125
+  },
+  {
+    "depth": 500,
+    "breadth": 500,
+    "custom_time": 1.7666097999899648,
+    "builtin_time": 0.013444899988826364,
+    "size_kb": 2886.1328125
+  }
+]

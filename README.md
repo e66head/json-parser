@@ -2,11 +2,12 @@
 
 A pure-Python JSON lexer and parser written from scratch for educational and practical use.
 
-This code should not be considered ready for any production use! However, it's MIT-licensed to allow liberal use for
-most any purpose. But buyer beware. This code is being used to better learn Python and explore its features. As a
-result, it will undergo changes. There are no plans to productize this code. There is no definite roadmap.
+This code is in active development. See the [ROADMAP](ROADMAP.md) for planned features such as JSONC and JSON5 support.
+While it is fully compliant with the JSON specification (RFC 8259), it should be considered educational in nature.
 
 ## Usage
+
+### As an importable module
 
 ```python
 from jsonparser import JsonParser
@@ -16,24 +17,59 @@ data = parser.parse()
 print(data)
 ```
 
-## Unit Testing
+### As a shell script
 
-This project uses the "test_parsing" files from the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite) by
-Nicolas Seriot (licensed under the MIT License) to ensure full compliance with the JSON specification.
-
-### Test the Lexer
+The package can be run directly as a utility:
 
 ```shell
-python -m pytest [--log-cli-level=[INFO|DEBUG]] tests/test_lexer.py
-python -m pytest [--log-cli-level=[INFO|DEBUG]] tests/test_parser.py
-python -m pytest [--log-cli-level=[INFO|DEBUG]] tests/test_suite_runner.py
+python -m jsonparser [options] [file]
 ```
 
-### Run All Tests
+**Common Examples:**
+
+* **Standard:** `python -m jsonparser data.json`
+* **Pickle (Auto-name):** `python -m jsonparser data.json -p` (creates `data.pkl`)
+* **Stealth (Logs to file):** `python -m jsonparser data.json -o result.txt --log-file debug.log -s -t`
+* **Piping:** `cat data.json | python -m jsonparser -t > result.txt`
+
+**Available Options:**
+
+| Option       | Short | Description                                                   |
+| :----------- | :---- | :------------------------------------------------------------ |
+| `--help`     | `-h`  | Show the help message and exit                                |
+| `--version`  | `-v`  | Show the program's version number and exit                    |
+| `--output`   | `-o`  | Path to a file where the parsed Python object will be written |
+| `--pickle`   | `-p`  | Output as a binary Pickle file (auto-names if -o is omitted)  |
+| `--time`     | `-t`  | Time the parsing operation and report duration to stderr      |
+| `--silent`   | `-s`  | Suppress data output to the console                           |
+| `--log`      | `-l`  | Set log level (CRITICAL, ERROR, WARNING, INFO, DEBUG)         |
+| `--log-file` |       | Path to a file where logs will be written                     |
+
+
+## Unit Testing
+
+This project uses the "test_parsing" files from the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite) by Nicolas Seriot (licensed under the MIT License) to ensure full compliance with the JSON specification.
+
+### Running Tests
+
+To run all tests (Lexer, Parser, and the full Compliance Suite):
 
 ```shell
 python -m pytest
 ```
+
+### Specific Test Modules
+
+If you are debugging a specific area, you can run individual test files:
+
+| Target               | Command                              |
+| :------------------- | :----------------------------------- |
+| **Lexer**            | `pytest tests/test_lexer.py`         |
+| **Parser**           | `pytest tests/test_parser.py`        |
+| **Compliance Suite** | `pytest tests/test_suite_runner.py`  |
+
+**Debugging:** Add `--log-cli-level=DEBUG` to any of the above commands to see detailed internal state transitions and tokenization logs during the test run.
+
 
 ## License
 

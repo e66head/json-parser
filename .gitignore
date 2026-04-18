@@ -33,3 +33,5 @@ Thumbs.db
 
 # Project-specific (optional)
 jsonparser_project.zip
+tests/output/
+monstrous.json
