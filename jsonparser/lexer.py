@@ -10,7 +10,13 @@ import logging
 from collections.abc import Generator
 
 from .tokens import Token, TokenType
-from .errors import * # pylint: disable=wildcard-import,unused-wildcard-import
+from .errors import (
+    LiteralError,
+    StringEndError,
+    CharacterError,
+    NumberError,
+    UnexpectedCharacterError
+)
 
 class JsonLexer:
     """A lexer for JSON that converts a JSON string into a stream of tokens."""
@@ -145,8 +151,11 @@ class JsonLexer:
                     break
 
                 case '\\':
-                    self._consume()  # Consume the escape (\) and handle the escape sequence.
+                    self._consume()  # Consume the escape (\)
 
+                    # [Lookahead: Escape Sequences]
+                    # Encountering a backslash triggers a lookahead to determine if the sequence is a single-character
+                    # escape (like \n) or a fixed-width unicode sequence (like \uXXXX).
                     if self.is_escapable(escaped_char := self._consume()):
                         chars.append(JsonLexer.JSON_ESCAPES[escaped_char])
 
@@ -157,8 +166,8 @@ class JsonLexer:
                             raise CharacterError(f"Invalid unicode escape sequence on line {self._line_number}")
                         try:
                             chars.append(chr(int(hex_digits, 16)))
-                        except ValueError as exc:
-                            raise CharacterError( f"Invalid hex in unicode escape on line {self._line_number}") from exc
+                        except ValueError as e:
+                            raise CharacterError( f"Invalid hex in unicode escape on line {self._line_number}") from e
 
                     else:
                         raise CharacterError(f"Invalid escape sequence '\\{escaped_char}' on line {self._line_number}")
@@ -217,8 +226,8 @@ class JsonLexer:
         try:
             val = float(num_str) if is_float else int(num_str)
             return Token(TokenType.NUMBER, val, self._line_number)
-        except ValueError as exc:
-            raise NumberError(f"Invalid number format '{num_str}' at line {self._line_number}") from exc
+        except ValueError as e:
+            raise NumberError(f"Invalid number format '{num_str}' at line {self._line_number}") from e
 
     def _scan_lbrace(self) -> Token:
         self._consume()

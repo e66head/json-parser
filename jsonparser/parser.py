@@ -8,7 +8,24 @@ converts it into Python objects.
 import logging
 
 from .lexer import JsonLexer
-from .errors import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from .errors import (
+    ExtraColonError,
+    ExtraCommaError,
+    ExtraDataError,
+    InvalidKeyError,
+    LeadingCommaError,
+    MissingColonError,
+    MissingCommaError,
+    MissingKeyError,
+    MissingLeftBraceError,
+    MissingLeftBracketError,
+    MissingRightBraceError,
+    MissingRightBracketError,
+    MissingValueError,
+    TrailingCommaError,
+    UnexpectedColonError,
+    UnexpectedTokenError,
+)
 from .stack import Stack
 from .tokens import Token, TokenType
 
@@ -17,15 +34,23 @@ class JsonParser():
 
     def __init__(self, json_str):
         self._lexer = JsonLexer(json_str)
+
+        # The main stack holds tokens shifted in from the lexer and aggregated values reduced from objects and arrays.
         self._main_stack = Stack()
+
+        # [Architecture: Reduce Optimization]
+        # The open_stack acts as a metadata "side-car". It stores the absolute index of every '{' or '[' currently on
+        # the main_stack. This allows O(1) lookups of matching containers and O(1) calculation of how many tokens to
+        # pop during a reduction, bypassing the need for a linear scan-back through the main stack.
         self._open_stack = Stack()
+
         self._logger = logging.getLogger(__name__)
 
     def _handle_object(self):
         """Handles the construction of the dictionary from the JSON object when a right brace token is encountered."""
 
         # Get the the most recent opening token from the open stack. This should be the left brace corresponding to the
-        # right brace that triggered this reduce operation. 
+        # right brace that triggered this reduce operation.
         try:
             index, token = self._open_stack.pop()
         except IndexError as exc:
@@ -35,55 +60,91 @@ class JsonParser():
             raise MissingLeftBraceError(f"Unexpected token {token} when expecting a left brace.")
 
         # Pop everything off the main stack in FIFO order from the first left brace to the top of the stack.
-        depth = self._main_stack.size() - index
-        token_array = self._main_stack.pop_from_depth(depth)
+        token_array = self._main_stack.pop_from_index(index)
 
-        expected = TokenType.LBRACE  # Set the expectation that the first item in the tokens array is a left brace.
+        # [Grammar Validation State Machine]
+        # The 'expected' variable drives the validation logic while iterating through the tokens of a JSON object. The
+        # initial state for a JSON object is to expect an opening left brace.
+        expected = TokenType.LBRACE
         dictionary = {}
         for token in token_array:
 
-            # The following conditions are ordered to favor performance. The expected conditions are hit most often so
-            # they are checked first, then the starting condition, then the terminal conditions, and finally the error
-            # conditions.
+            # Conditions are ordered to favor performance (most common first).
 
             # EXPECTED CONDITIONS.
-            if TokenType.STRING is expected and token.type == TokenType.STRING:
+
+            if TokenType.STRING is expected and token.type is TokenType.STRING:
                 key = token.value
                 expected = TokenType.COLON
 
-            elif TokenType.COLON is expected and token.type == TokenType.COLON:
+            elif TokenType.COLON is expected and token.type is TokenType.COLON:
                 expected = TokenType.VALUE
 
             elif TokenType.VALUE is expected and token.is_value():
                 dictionary[key] = token.value
                 expected = TokenType.COMMA
 
-            elif TokenType.COMMA is expected and token.type == TokenType.COMMA:
+            elif TokenType.COMMA is expected and token.type is TokenType.COMMA:
                 expected = TokenType.STRING
 
             # STARTING CONDITIONS.
-            elif TokenType.LBRACE is expected and token.type == TokenType.LBRACE:
+
+            elif TokenType.LBRACE is expected and token.type is TokenType.LBRACE:
                 expected = TokenType.STRING
 
             # TERMINAL CONDITIONS.
-            elif TokenType.COMMA is expected and token.type == TokenType.RBRACE:
+
+            elif TokenType.COMMA is expected and token.type is TokenType.RBRACE:
                 break # End of object.
 
-            elif TokenType.STRING is expected and token.type == TokenType.RBRACE and not dictionary:
+            elif TokenType.STRING is expected and token.type is TokenType.RBRACE and not dictionary:
                 break # End of empty object.
 
             # ERROR CONDITIONS.
-            ###JDG TODO: Add specific malformed object errors. Until then, fall into the generic unexpected token error.
+
+            # {<string> <value>}
+            elif TokenType.COLON is expected and token.is_value():
+                raise MissingColonError("Missing colon between key and value.")
+
+            # {<string>: ,}
+            elif TokenType.VALUE is expected and token.type is TokenType.COMMA:
+                raise MissingValueError("Unexpected comma when expecting a value.")
+
+            # {<string>:: <value>}
+            elif TokenType.VALUE is expected and token.type is TokenType.COLON:
+                raise ExtraColonError("Unexpected double colon")
+
+            # {: <value>}
+            elif TokenType.STRING is expected and token.type is TokenType.COLON:
+                raise MissingKeyError("Unexpected colon when expecting a string key.")
+
+            # {<string>: <value>,,<string>: <value>}
+            elif TokenType.STRING is expected and token.type is TokenType.COMMA and dictionary:
+                raise ExtraCommaError("Unexpected extra comma in object.")
+
+            # {, <string>: <value>}
+            elif TokenType.STRING is expected and token.type is TokenType.COMMA and not dictionary:
+                raise LeadingCommaError("Unexpected leading comma in object.")
+
+            # {<value>: <value>}
+            elif TokenType.STRING is expected and token.type is not TokenType.STRING:
+                raise InvalidKeyError(f"Invalid key type {token.type.name}. Keys must be strings.")
+
+            # {<string>: <value> <string>: <value>}
+            elif TokenType.COMMA is expected and token.is_value():
+                raise MissingCommaError("Missing comma between object members.")
+
             else:
                 raise UnexpectedTokenError(f"Unexpected token {token} in object. Expected {expected.name}.")
 
+        # Replace the entire array sequence on the main stack with a list represented as a single VALUE token.
         self._main_stack.push(Token(TokenType.VALUE, dictionary, token_array[0].line))
 
     def _handle_array(self):
         """Handles the construction of the list from the JSON array when a right bracket token is encountered."""
 
         # Get the the most recent opening token from the open stack. This should be the left bracket corresponding to
-        # the right bracket that triggered this reduce operation. 
+        # the right bracket that triggered this reduce operation.
         try:
             index, token = self._open_stack.pop()
         except IndexError as exc:
@@ -93,71 +154,84 @@ class JsonParser():
             raise MissingLeftBracketError(f"Unexpected token {token} when expecting a left bracket.")
 
         # Pop everything off the main stack in FIFO order from the first left bracket to the top of the stack.
-        depth = self._main_stack.size() - index
-        token_array = self._main_stack.pop_from_depth(depth)
+        token_array = self._main_stack.pop_from_index(index)
 
+        # [Grammar Validation State Machine]
+        # The 'expected' variable drives the validation logic while iterating through the tokens of a JSON array. The
+        # starting condition for a JSON array is to expect an opening left bracket.
         expected = TokenType.LBRACKET
         array = []
         for token in token_array:
 
-            # The following conditions are ordered to favor performance. The expected conditions are hit most often so
-            # they are checked first, then the starting condition, then the terminal conditions, and finally the error
-            # conditions.
+            # The following conditions are ordered to favor performance.
 
             # EXPECTED CONDITIONS.
             if TokenType.VALUE is expected and token.is_value():
                 array.append(token.value)
                 expected = TokenType.COMMA
 
-            elif TokenType.COMMA is expected and token.type == TokenType.COMMA:
+            elif TokenType.COMMA is expected and token.type is TokenType.COMMA:
                 expected = TokenType.VALUE
 
             # STARTING CONDITIONS.
-            elif TokenType.LBRACKET is expected and token.type == TokenType.LBRACKET:
+            elif TokenType.LBRACKET is expected and token.type is TokenType.LBRACKET:
                 expected = TokenType.VALUE
 
             # TERMINAL CONDITIONS.
-            elif TokenType.COMMA is expected and token.type == TokenType.RBRACKET:
+            elif TokenType.COMMA is expected and token.type is TokenType.RBRACKET:
                 break # End of array.
 
-            elif TokenType.VALUE is expected and token.type == TokenType.RBRACKET and not array:
+            elif TokenType.VALUE is expected and token.type is TokenType.RBRACKET and not array:
                 break # End of empty array.
 
             # ERROR CONDITIONS.
+
+            # [<value> <value>]
             elif TokenType.COMMA is expected and token.is_value():
                 raise MissingCommaError("Unexpected value when expecting a comma")
 
-            elif TokenType.VALUE is expected and token.type == TokenType.RBRACKET and array:
+            # [<value>,]
+            elif TokenType.VALUE is expected and token.type is TokenType.RBRACKET and array:
                 raise TrailingCommaError("Unexpected trailing comma")
 
-            elif TokenType.VALUE is expected and token.type == TokenType.COMMA and array:
+            # [<value>,,<value>]
+            elif TokenType.VALUE is expected and token.type is TokenType.COMMA and array:
                 raise ExtraCommaError("Unexpected comma when expecting a value")
 
-            elif TokenType.VALUE is expected and token.type == TokenType.COMMA and not array:
+            # [,<value>]
+            elif TokenType.VALUE is expected and token.type is TokenType.COMMA and not array:
                 raise LeadingCommaError("Unexpected leading comma")
+            
+            # [<string>: <value>]
+            elif token.type is TokenType.COLON:
+                raise UnexpectedColonError("Unexpected colon in array.")
 
             else:
                 raise UnexpectedTokenError(f"Unexpected token {token} in array. Expected {expected.name}.")
 
+        # Replace the entire sequence on the main stack with the single reduced VALUE token.
         self._main_stack.push(Token(TokenType.VALUE, array, token_array[0].line))
 
     def _handle_opening_token(self):
         """Handles a token representing the opening brace or bracket of an object or array."""
-        index = self._main_stack.size() - 1   # The index into the main stack (from the "bottom") of the opening token.
-        token = self._main_stack.peek()       # This is the opening token that was just pushed onto the main stack.
+        # Record the position of the opening token so it doesn't require scanning back to find it during reduction.
+        index = self._main_stack.size() - 1
+        token = self._main_stack.peek()
         self._open_stack.push((index, token))
 
     def _handle_eof(self):
         """Handles cleaning up the stack when an end-of-file token is encountered."""
 
-        self._main_stack.pop() # Pop the EOF token and throw it away.
+        self._main_stack.pop() # Pop the EOF token.
 
+        # After popping the EOF token, there should be one item remaining on the stack representing valid JSON.
         if self._main_stack.size() == 1 and self._main_stack.peek().is_value():
-            return # Successfully parsed JSON value.
+            return
 
         if self._main_stack.is_empty():
             raise ExtraDataError("Unexpected end of JSON input. No data found.")
 
+        # Check for unclosed containers.
         if self._main_stack[0].type == TokenType.LBRACE:
             raise MissingRightBraceError("Unexpected end of object. Missing right brace.")
 
@@ -168,11 +242,9 @@ class JsonParser():
 
     def parse(self):
         """Parses the JSON string and returns the corresponding Python object.
-        
-        This a shift-reduce parser that uses a stack to hold tokens. It unconditionally shifts tokens from the lexer
-        onto the stack until a reduce operation is triggered by encountering one of three tokens: a left brace, a left
-        bracket, or an end-of-file token. An array or object is reduced to a single token of special type "VALUE" that
-        holds the corresponding Python type (list of dict) as its value.
+
+        This is a shift-reduce parser that uses a stack to hold tokens. It unconditionally shifts tokens from the lexer
+        onto the stack until a reduce operation is triggered by encountering a terminal token ( } , ] , or EOF).
         """
 
         for token in self._lexer.tokenize():
@@ -194,6 +266,7 @@ class JsonParser():
                 case TokenType.EOF:
                     self._handle_eof()
 
-        token = self._main_stack.pop() # This should be the final token holding the fully parsed JSON value.
+        # The final pop yields the root Python object.
+        token = self._main_stack.pop()
 
         return token.value

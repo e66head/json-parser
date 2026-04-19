@@ -3,9 +3,7 @@ Custom stack implementation that extends the built-in list type.
 
 This module provides a custom stack class that inherits from Python's built-in list type. But it adds explicit methods
 for stack operations so that stack behavior is specific and clear. It supports the basic stack operations push, pop,
-peek with the end of the list considered to be the top of the stack. It also includes methods for popping multiple
-items based on depth or based on a "predicate" function that takes stack items and returns a boolean indicating whether
-the item matches whatever condition the predicate function is checking for. It also provides a pretty-print
+peek with the end of the list considered to be the top of the stack. It also provides a pretty-print
 representation of the stack's contents when it's printed.
 """
 
@@ -41,47 +39,21 @@ class Stack(list):
         self._logger.debug("Popped: %s", item)
         return item
 
-    def pop_to_depth(self, depth: int) -> list:
-        """Pops a list of 'depth' items and returns them in LIFO (reversed) order."""
-        return [self.pop() for _ in range(depth)]
-
-    def pop_to_item(self, predicate: callable) -> list:
-        """Pops a list of items to the item matching 'predicate'. Returns them in LIFO (reversed) order.
-
-        Note: The item matching the predicate is included in the returned list.
-        """
-        items = []
-        while not self.is_empty():
-            item = self.pop()
-            items.append(item)
-            if predicate(item):
-                return items
-        raise IndexError("Item matching predicate not found on stack")
-
-    def pop_from_depth(self, depth: int) -> list:
-        """Pops a list of 'depth' items and returns them in FIFO (original) order."""
-        if len(self) < depth:
-            raise IndexError(f"Attempted to pop {depth} items, but stack only has {len(self)}")
-        items = self[-depth:]
-        del self[-depth:]
-        self._logger.debug("Popped %d items from depth (FIFO)", len(items))
-        return items
-
-    def pop_from_item(self, predicate: callable) -> list:
-        """Pops a list of items starting from the item matching 'predicate'. Returns them in FIFO (original) order.
+    def pop_from_index(self, index: int) -> list:
+        """Pops all items from the specified index to the top of the stack and returns them in FIFO order.
         
-        Note: The item matching the predicate is included in the returned list.
+        The item at the specified index is included as the first item in the returned list.
         """
-        for i in range(len(self) - 1, -1, -1):
-            if predicate(self[i]):
-                # elements = the matching item and everything after it
-                elements = self[i:]
-                # Remove everything from the matching item to the top
-                del self[i:]
-                self._logger.debug("Popped to item matching predicate (FIFO)")
-                return elements
+        if index < 0 or index >= len(self):
+            raise IndexError(f"Index {index} is out of bounds for stack of size {len(self)}")
 
-        raise IndexError("Item matching predicate not found on stack")
+        # Python's slice syntax is used to get all items from the index to the top of the stack and to delete them from
+        # the stack in one operation. Even though this is still O(K) where K is the number of items popped, it is
+        # significantly faster than repeated individual pop() calls because the whole operation happens in the C layer.
+        items = self[index:]
+        del self[index:]
+        self._logger.debug("Popped %d items from index %d to top (FIFO)", len(items), index)
+        return items
 
     def peek(self):
         """Returns the top item of the stack without removing it.

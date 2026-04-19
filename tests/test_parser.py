@@ -1,95 +1,114 @@
-"""
-Unit tests for the JSON Parser.
-"""
-
 import pytest
+from jsonparser.parser import JsonParser
+from jsonparser.errors import (
+    ExtraColonError,
+    ExtraCommaError,
+    ExtraDataError,
+    InvalidKeyError,
+    LeadingCommaError,
+    MissingColonError,
+    MissingCommaError,
+    MissingKeyError,
+    MissingLeftBraceError,
+    MissingLeftBracketError,
+    MissingRightBraceError,
+    MissingRightBracketError,
+    MissingValueError,
+    TrailingCommaError,
+    UnexpectedTokenError
+)
 
-from jsonparser.parser import * # pylint: disable=wildcard-import,unused-wildcard-import
-from jsonparser.errors import * # pylint: disable=wildcard-import,unused-wildcard-import
+def test_parser_basic_object():
+    json_str = '{"key": "value"}'
+    parser = JsonParser(json_str)
+    result = parser.parse()
+    assert result == {"key": "value"}
 
-#
-# Ensure that valid arrays are parsed correctly.
-#
-@pytest.mark.parametrize("valid_json, expected_result", [
-    ("[]",        []),
-    ("[1]",       [1]),
-    ("[1, 2, 3]", [1, 2, 3]),
-])
-def test_parser_valid_array(valid_json, expected_result):
-    """Tests that valid arrays are parsed correctly."""
-    parser = JsonParser(valid_json)
-    assert parser.parse() == expected_result
+def test_parser_empty_object():
+    json_str = '{}'
+    parser = JsonParser(json_str)
+    result = parser.parse()
+    assert result == {}
 
-#
-# Ensure malformed arrays raise specific errors with helpful messages.
-#
+def test_parser_basic_array():
+    json_str = '[1, 2, 3]'
+    parser = JsonParser(json_str)
+    result = parser.parse()
+    assert result == [1, 2, 3]
+
+def test_parser_empty_array():
+    json_str = '[]'
+    parser = JsonParser(json_str)
+    result = parser.parse()
+    assert result == []
+
+def test_parser_complex_object():
+    json_str = """
+    {
+        "string": "value",
+        "number": 123,
+        "bool_true": true,
+        "bool_false": false,
+        "null_val": null,
+        "list": [1, 2, {"nested": "obj"}],
+        "nested_obj": {
+            "a": 1,
+            "b": [true, false]
+        }
+    }
+    """
+    parser = JsonParser(json_str)
+    result = parser.parse()
+    assert result["string"] == "value"
+    assert result["number"] == 123
+    assert result["list"][2]["nested"] == "obj"
+    assert result["nested_obj"]["b"] == [True, False]
+
 @pytest.mark.parametrize("invalid_json, expected_error, expected_match", [
-    ("[, 1, 2]", LeadingCommaError,        "Unexpected leading comma"),
-    ("[1, , 2]", ExtraCommaError,          "Unexpected comma when expecting a value"),
-    ("[1, 2,]",  TrailingCommaError,       "Unexpected trailing comma"),
-    ("[1 2]",    MissingCommaError,        "Unexpected value when expecting a comma"),
-    ("]",        MissingLeftBracketError,  "Unexpected right bracket without matching left bracket"),
-    ("[",        MissingRightBracketError, "Unexpected end of array"),
-    ("1, 2]",    MissingLeftBracketError,  "Unexpected right bracket without matching left bracket"),
+    # Object Errors
+    ('{ "key" "value" }',       MissingColonError, "Missing colon between key and value"),
+    ('{ : "value" }',           MissingKeyError,   "Unexpected colon when expecting a string key"),
+    ('{ 123: "value" }',        InvalidKeyError,   "Invalid key type NUMBER"),
+    ('{ "key": , }',            MissingValueError, "Unexpected comma when expecting a value"),
+    ('{ "key": "v", , }',       ExtraCommaError,   "Unexpected extra comma in object"),
+    ('{ "key": "v" "key2": 1}', MissingCommaError, "Missing comma between object members"),
+    ('{ , "key": "v" }',        LeadingCommaError, "Unexpected leading comma in object"),
+    ('{ "key":: "value" }',     ExtraColonError,   "Unexpected double colon"),
+
+    # Structural Object Errors
+    ('}',                     MissingLeftBraceError, "Unexpected right brace without matching left brace"),
+    ('{',                     MissingRightBraceError, "Unexpected end of object. Missing right brace"),
 ])
-def test_parser_array_errors(invalid_json, expected_error, expected_match):
-    """Ensures that various malformed arrays raise specific errors with helpful messages."""
+def test_parser_object_errors(invalid_json, expected_error, expected_match):
     parser = JsonParser(invalid_json)
     with pytest.raises(expected_error, match=expected_match):
         parser.parse()
 
-#@pytest.mark.parametrize("malformed_json", [
-#    ("[1, 2"),      # Unclosed array
-#    ("1, 2"),       # Multiple values/trailing comma at root
-#    ("[1] true"),   # Trailing data after valid JSON
-#    ('{"a": 1'),    # Unclosed object
-#])
-#def test_parser_structural_errors(malformed_json):
-#    """Ensures that malformed JSON structures that leave junk on the stack raise an error."""
-#    parser = JsonParser(malformed_json)
-#    with pytest.raises(JsonParserError):
-#        parser.parse()
-#def test_parser_basic_object():
-#    """Ensures that the parser can handle a simple object."""
-#    parser = JsonParser('{"foo": 1}')
-#    result = parser.parse()
-#    assert result is not None
+@pytest.mark.parametrize("invalid_json, expected_error, expected_match", [
+    # Array Errors
+    ("[, 1, 2]",              LeadingCommaError,    "Unexpected leading comma"),
+    ("[1, , 2]",              ExtraCommaError,      "Unexpected comma when expecting a value"),
+    ("[1, 2,]",               TrailingCommaError,   "Unexpected trailing comma"),
+    ("[1 2]",                 MissingCommaError,    "Unexpected value when expecting a comma"),
 
-JSON_DATA =r"""
-{
-  "project": "JSON Parser",
-  "version": 0.1,
-  "beta": true,
-  "released": null,
-  "features": [
-    "arrays",
-    "objects",
-    "numbers (123, -4.5, 6.7e+8)",
-    "strings with escapes: \" \/ \b \f \n \r \t",
-    "unicode: \u2728"
-  ],
-  "metadata": {
-    "author": "Frankie",
-    "tags": ["python", "lexer", "parser"],
-    "stats": {
-      "lines_of_code": 1024,
-      "test_coverage": 0.98,
-      "is_functional": true
-    },
-    "empty_stuff": {
-      "empty_array": [],
-      "empty_object": {}
-    }
-  },
-  "deeply_nested": [[[[{"key": "value"}]]]]
-}
-"""
+    # Structural Array Errors
+    ("]",                     MissingLeftBracketError, "Unexpected right bracket without matching left bracket"),
+    ("[",                     MissingRightBracketError, "Unexpected end of array. Missing right bracket"),
+])
+def test_parser_array_errors(invalid_json, expected_error, expected_match):
+    parser = JsonParser(invalid_json)
+    with pytest.raises(expected_error, match=expected_match):
+        parser.parse()
 
+def test_parser_extra_data():
+    json_str = '{"a": 1} "extra"'
+    parser = JsonParser(json_str)
+    with pytest.raises(ExtraDataError, match="Unexpected end of JSON input. Extra data found."):
+        parser.parse()
 
-
-def test_parser_complex_object():
-    """Ensures that the parser can handle a complex object."""
-    parser = JsonParser(JSON_DATA)
-    result = parser.parse()
-
-    print(result)
+def test_parser_no_data():
+    json_str = ''
+    parser = JsonParser(json_str)
+    # The lexer will yield EOF immediately, parser will raise ExtraDataError
+    with pytest.raises(ExtraDataError, match="Unexpected end of JSON input. No data found."):
+        parser.parse()

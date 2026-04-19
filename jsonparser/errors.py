@@ -17,47 +17,28 @@ Classes:
 class JsonLexerError(Exception):
     """Base exception for JsonLexer errors."""
 
-class UnexpectedCharacterError(JsonLexerError): pass
-class EndOfJsonError(JsonLexerError): pass
-class ObjectStartError(JsonLexerError): pass
-class ObjectMembersError(JsonLexerError): pass
-class ObjectEndError(JsonLexerError): pass
-class JsonKeyError(JsonLexerError): pass
-class ColonError(JsonLexerError): pass
-class ArrayStartError(JsonLexerError): pass
-class ArrayElementsError(JsonLexerError): pass
-class ArrayEndError(JsonLexerError): pass
-class StringStartError(JsonLexerError): pass
-class StringCharactersError(JsonLexerError): pass
-class StringEndError(JsonLexerError): pass
 class CharacterError(JsonLexerError): pass
 class LiteralError(JsonLexerError): pass
 class NumberError(JsonLexerError): pass
-class TrueError(JsonLexerError): pass
-class FalseError(JsonLexerError): pass
-class NullError(JsonLexerError): pass
-class EscapeError(JsonLexerError): pass
-class OneNineError(JsonLexerError): pass
-class OneNineIndexError(JsonLexerError): pass
-class DigitError(JsonLexerError): pass
-class DigitsError(JsonLexerError): pass
-class IntegerError(JsonLexerError): pass
-class FractionError(JsonLexerError): pass
-class ExponentError(JsonLexerError): pass
-class MissingValueError(JsonLexerError): pass
+class StringEndError(JsonLexerError): pass
+class UnexpectedCharacterError(JsonLexerError): pass
 
 class JsonParserError(Exception):
     """Base exception for JsonParser errors."""
 
-class UnknownEventError(JsonParserError): pass
-class InvalidStateError(JsonParserError): pass
-class MissingLeftBracketError(JsonParserError): pass
-class MissingRightBracketError(JsonParserError): pass
-class MissingLeftBraceError(JsonParserError): pass
-class MissingRightBraceError(JsonParserError): pass
-class MissingCommaError(JsonParserError): pass
-class TrailingCommaError(JsonParserError): pass
-class LeadingCommaError(JsonParserError): pass
+class ExtraColonError(JsonParserError): pass
 class ExtraCommaError(JsonParserError): pass
-class UnexpectedTokenError(JsonParserError): pass
 class ExtraDataError(JsonParserError): pass
+class InvalidKeyError(JsonParserError): pass
+class LeadingCommaError(JsonParserError): pass
+class MissingColonError(JsonParserError): pass
+class MissingCommaError(JsonParserError): pass
+class MissingKeyError(JsonParserError): pass
+class MissingLeftBraceError(JsonParserError): pass
+class MissingLeftBracketError(JsonParserError): pass
+class MissingRightBraceError(JsonParserError): pass
+class MissingRightBracketError(JsonParserError): pass
+class MissingValueError(JsonParserError): pass
+class TrailingCommaError(JsonParserError): pass
+class UnexpectedColonError(JsonParserError): pass
+class UnexpectedTokenError(JsonParserError): pass
