@@ -2,7 +2,7 @@
 
 This document provides a visual guide to the JSON grammar, using tokens that match the `TokenType` enum.
 
-## 1. Key
+## 1. Visual Guide Key
 
 ### Diagram Shapes
 
@@ -29,7 +29,65 @@ This document provides a visual guide to the JSON grammar, using tokens that mat
 | `FALSE`    | `TokenType.FALSE`           | `false`              |
 | `NULL`     | `TokenType.NULL`            | `null`               |
 
-## 2. VALUE
+## 2. Formal Grammar (EBNF)
+
+A JSON text is a single value, optionally surrounded by whitespace.
+
+```text
+json    = element ;
+```
+
+Values can be complex containers or primitive types.
+
+```text
+element = ws value ws ;
+value   = object | array | string | number | bool | null ;
+```
+
+Objects are collections of key-value pairs separated by commas.
+
+```text
+object  = "{" ( ws | member ( "," member )* ) "}" ;
+member  = string ws ":" element ;
+```
+
+Arrays are ordered lists of values.
+
+```text
+array   = "[" ( ws | element ( "," element )* ) "]" ;
+```
+
+Strings consist of characters inside double quotes.
+
+```text
+string  = '"' char* '"' ;
+char    = [^"\\]
+        | "\" ( ["\/bfnrt] | "u" [0-9a-fA-F]{4} ) ;
+```
+
+Numbers follow scientific notation rules.
+
+```text
+number  = [ "-" ] int [ frac ] [ exp ] ;
+int     = "0" | [1-9] [0-9]* ;
+frac    = "." [0-9]+ ;
+exp     = [eE] [ "+" | "-" ] [0-9]+ ;
+```
+
+Primitives.
+
+```text
+bool    = "true" | "false" ;
+null    = "null" ;
+```
+
+Whitespace: Space, Horizontal Tab, Line Feed, or Carriage Return.
+
+```text
+ws      = [ \x20 \t \n \r ]* ;
+```
+
+## 3. VALUE
 
 A JSON value can be an object, array, string, number, or one of the three literals.
 
@@ -51,7 +109,7 @@ graph LR
     NULL --> End
 ```
 
-## 3. OBJECT
+## 4. OBJECT
 
 An object is an unordered set of name/value pairs.
 
@@ -61,10 +119,10 @@ graph LR
     LBRACE --> RBRACE["}"] --> End(( ))
     LBRACE --> KEY[STRING] --> COLON[":"] --> VAL[VALUE]
     VAL --> RBRACE
-    VAL -- COMMA --> KEY
+    VAL --> COMMA[","] --> KEY
 ```
 
-## 4. ARRAY
+## 5. ARRAY
 
 An array is an ordered collection of values.
 
@@ -73,46 +131,46 @@ graph LR
     Start(( )) --> LBRACKET["["]
     LBRACKET --> RBRACKET["]"] --> End(( ))
     LBRACKET --> VAL[VALUE] --> RBRACKET
-    VAL -- COMMA --> VAL
+    VAL --> COMMA[","] --> VAL
 ```
 
-## 5. STRING
+## 6. STRING
 
 A string is a sequence of zero or more Unicode characters, wrapped in double quotes.
 
 ```mermaid
 graph LR
-    Start(( )) --> QUOTE1[QUOTE]
+    Start(( )) --> QUOTE1["&quot;"]
     QUOTE1 --> CHAR[CHARACTER]
-    CHAR --> QUOTE2[QUOTE]
-    QUOTE2 --> End(( ))
-    CHAR -- BACKSLASH --> ESC[ESCAPED_CHAR]
+    CHAR --> BACKSLASH["\"] --> ESC[ESCAPED_CHAR]
     ESC --> CHAR
+    CHAR --> QUOTE2["&quot;"]
+    QUOTE2 --> End(( ))
     CHAR --> CHAR
 ```
 
-## 6. NUMBER
+## 7. NUMBER
 
 A number is very much like a C or Java number, except that the octal and hexadecimal formats are not used.
 
 ```mermaid
 graph LR
-    Start(( )) --> MINUS["-"] --> POS
-    Start --> POS(( ))
+    Start(( )) --> MINUS["-"] --> NEXT1(( ))
+    Start --> NEXT1
 
-    POS --> ZERO["0"] --> NEXT
-    POS --> ONENINE["1-9"] --> DIGITS[DIGITS] --> NEXT
-    ONENINE --> NEXT(( ))
+    NEXT1 --> ZERO["0"] --> NEXT2(( ))
+    NEXT1 --> ONENINE["1-9"] --> DIGITS["0-9"] --> NEXT2
+    ONENINE --> NEXT2
 
-    NEXT --> DOT["."] --> FRAC_DIGITS[DIGITS] --> NEXT2
-    NEXT --> NEXT2(( ))
+    NEXT2 --> DOT["."] --> FRAC_DIGITS["0-9"] --> NEXT3(( ))
+    NEXT2 --> NEXT3
 
-    NEXT2 --> EXP["e or E"] --> SIGN["+ or -"] --> EXP_DIGITS[DIGITS] --> End(( ))
+    NEXT3 --> EXP["e or E"] --> SIGN["+ or -"] --> EXP_DIGITS["0-9"] --> End(( ))
     EXP --> EXP_DIGITS
-    NEXT2 --> End
+    NEXT3 --> End
 ```
 
-## 7. WHITESPACE
+## 8. WHITESPACE
 
 Whitespace can be inserted between any pair of tokens.
 

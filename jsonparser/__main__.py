@@ -1,11 +1,8 @@
 """
 JSON Parser CLI entry point.
 
-This module provides a command-line interface for the jsonparser package, allowing
-users to parse JSON files and see the resulting Python objects.
+This module provides a command-line interface for the JSON parser package.
 """
-
-__version__ = "0.1.0"
 
 import argparse
 import logging
@@ -15,6 +12,7 @@ import pprint
 import sys
 import time
 
+from . import __version__
 from .parser import JsonParser
 from .errors import JsonParserError, JsonLexerError
 

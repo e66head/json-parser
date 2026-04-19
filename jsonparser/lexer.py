@@ -6,293 +6,188 @@ of tokens that can be consumed by the JSON Parser (JsonParser).
 """
 
 import logging
+import re
 
 from collections.abc import Generator
 
 from .tokens import Token, TokenType
-from .errors import (
-    LiteralError,
-    StringEndError,
-    CharacterError,
-    NumberError,
-    UnexpectedCharacterError
-)
+from .errors import UnexpectedCharacterError
 
 class JsonLexer:
     """A lexer for JSON that converts a JSON string into a stream of tokens."""
 
-    ###JDG TODO: Consider making these instance variables so this lexer can be extended to support other lexers (like JSON5 in particular).
-    JSON_MAX_CODEPOINT = 0x10FFFF
-    JSON_MIN_CODEPOINT = 0x000020
-    JSON_FORBIDDEN = {'"', '\\'}
-    JSON_ESCAPES = {'"': '"', '\\': '\\', '/': '/', 'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t'}
-    JSON_DECIMAL_DIGIT = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-    JSON_ONENINE_DIGIT = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
-    JSON_HEXIDECIMAL_DIGIT = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'a', 'b', 'c', 'd', 'e', 'f',
-        'A', 'B', 'C', 'D', 'E', 'F'
+    # JSON string regex helper components.
+    JSON_VALID_ESCAPES  = r'\\["\\/bfnrt]'
+    JSON_UNICODE_ESCAPE = r'\\u[0-9a-fA-F]{4}'
+    JSON_VALID_LITERALS = r'[^"\\\0-\x1F]'
+
+    # JSON number regex helper components.
+    JSON_ONENINE_DIGITS = r'[1-9]\d*'
+    JSON_EXPONENT       = r'[eE][+-]?\d+'
+
+    # JSON string unescaping components.
+    JSON_ESCAPE_RE = re.compile(fr'{JSON_VALID_ESCAPES}|{JSON_UNICODE_ESCAPE}')
+    JSON_UNESCAPE_MAP = {
+        '"':  '"',
+        '\\': '\\',
+        '/':  '/',
+        'b':  '\b',
+        'f':  '\f',
+        'n':  '\n',
+        'r':  '\r',
+        't':  '\t'
     }
-    JSON_WHITESPACE = {' ', '\t', '\n', '\r'}
 
     @staticmethod
-    def is_forbidden(char) -> bool:
-        """Determines if a character is forbidden in JSON strings."""
-        forbidden = False
-        if char in JsonLexer.JSON_FORBIDDEN:
-            forbidden = True
-        elif ord(char) < JsonLexer.JSON_MIN_CODEPOINT:
-            forbidden = True
-        elif ord(char) > JsonLexer.JSON_MAX_CODEPOINT:
-            forbidden = True
-        return forbidden
+    def _json_unescape(match: re.Match) -> str:
+        """Unescape a JSON string escape sequence that was matched by JSON_ESCAPE_RE."""
+        esc = match.group(0) # match.group(0) must be an escape sequence matched by JSON_ESCAPE_RE.
+        if esc.startswith(r'\u'): # Handle unicode escapes (that is, \uXXXX)
+            return chr(int(esc[2:], 16))
+        return JsonLexer.JSON_UNESCAPE_MAP[esc[1:]]
 
-    @staticmethod
-    def is_decimal(char) -> bool:
-        """Determines if a character is a decimal digit."""
-        return char in JsonLexer.JSON_DECIMAL_DIGIT
+    TOKENS = {
+        'LBRACE': {
+            'regex':   r'\{',
+            'handler': lambda s: s
+        },
 
-    @staticmethod
-    def is_onenine(char) -> bool:
-        """Determines if a character is a one-nine digit."""
-        return char in JsonLexer.JSON_ONENINE_DIGIT
+        'RBRACE': {
+            'regex':   r'\}',
+            'handler': lambda s: s
+        },
 
-    @staticmethod
-    def is_hex(char) -> bool:
-        """Determines if a character is a hexadecimal digit."""
-        return char in JsonLexer.JSON_HEXIDECIMAL_DIGIT
+        'LBRACKET': {
+            'regex':   r'\[',
+            'handler': lambda s: s
+        },
 
-    @staticmethod
-    def is_escapable(char) -> bool:
-        """Determines if a character is escapable in JSON strings."""
-        return char in JsonLexer.JSON_ESCAPES
+        'RBRACKET': {
+            'regex':   r'\]',
+            'handler': lambda s: s
+        },
 
-    @staticmethod
-    def is_whitespace(char) -> bool:
-        """Determines if a character is whitespace in JSON."""
-        return char in JsonLexer.JSON_WHITESPACE
+        'COMMA': {
+            'regex':   r',',
+            'handler': lambda s: s
+        },
+
+        'COLON': {
+            'regex':   r':',
+            'handler': lambda s: s
+        },
+
+        'STRING': {
+            'regex':   fr'''
+                "                         # Opening double quote
+                (?:                       # Group for content
+                    {JSON_VALID_ESCAPES}  # 1. Escaped characters
+                    |                     # OR
+                    {JSON_UNICODE_ESCAPE} # 2. Unicode escape
+                    |                     # OR
+                    {JSON_VALID_LITERALS} # 3. Any other valid literal
+                )*                        # GREEDY: consume as much as possible
+                "                         # Closing double quote
+            ''',
+            'handler': lambda s: JsonLexer.JSON_ESCAPE_RE.sub(JsonLexer._json_unescape, s[1:-1])
+        },
+
+        'FLOAT': {
+            'regex':   fr'''
+                -?                              # Optional leading minus sign
+                (?: 0 | {JSON_ONENINE_DIGITS} ) # Integer part: either a single 0 or 1-9 followed by digits
+                (?:                             # Mandatory Fractional OR Exponent part:
+                    \.\d+                       # . followed by one or more digits
+                    (?: {JSON_EXPONENT} )?      # followed by an optional exponent
+                    |                           # OR
+                    {JSON_EXPONENT}             # a mandatory exponent (e.g., 1e10)
+                )
+            ''',
+            'handler': float
+        },
+
+        'INTEGER': {
+            'regex':   fr'''
+                -?                        # Optional leading minus sign
+                (?:                       # Integer part:
+                    0                     #   Either a literal zero
+                    |                     #   OR
+                    {JSON_ONENINE_DIGITS} #   A non-zero digit followed by any number of digits
+                )
+            ''',
+            'handler': int
+        },
+
+        'TRUE': {
+            'regex':   r'true',
+            'handler': lambda _: True
+        },
+
+        'FALSE': {
+            'regex':   r'false',
+            'handler': lambda _: False
+        },
+
+        'NULL': {
+            'regex':   r'null',
+            'handler': lambda _: None
+        },
+
+        'WHITESPACE': {
+            'regex':   r'[\x20\t\r\n]+',
+            'handler': lambda s: s
+        },
+    }
+
+    # Create one regex from the individual token patterns so one match() call can match any token.
+    TOKENS_RE = re.compile('|'.join(f'(?P<{key}>{value['regex']})' for key, value in TOKENS.items()), re.VERBOSE)
 
     def __init__(self, json_str):
-
+        """Initialize the lexer with the given JSON string."""
         self._json_str = json_str
         self._index = 0
-        self._line_number = 1
         self._logger = logging.getLogger(__name__)
+
+    def _compute_line_column(self):
+        """Compute the current line and column given the current index.
+        
+        Note! This is expensive! So, it should be called only when handling fatal exceptions."""
+        line = self._json_str[:self._index].count('\n') + 1
+        column = self._index - self._json_str[:self._index].rfind('\n') - 1
+        return line, column
 
     def tokenize(self) -> Generator[Token, None, None]:
         """Yields tokens from the JSON string until EOF."""
         self._logger.info("Starting tokenization.")
-        while True:
-            self._consume_whitespace()
 
-            if not self._peek():
-                break
+        json_str_len = len(self._json_str)
+        while self._index < json_str_len:
 
-            token = self._get_next_token()
+            match = self.TOKENS_RE.match(self._json_str, self._index)
+            if not match:
+                char = self._json_str[self._index]
+                line, column = self._compute_line_column()
+                raise UnexpectedCharacterError(f"Unexpected character '{char}' at {line}:{column}")
+
+            # There was a match, so latch the type and value directly from the match object.
+            raw_type = match.lastgroup
+            raw_value = match.group(raw_type)
+
+            # Save the start index before advancing the index past the matching token.
+            start_index = self._index
+            self._index = match.end()
+
+            # Don't produce the whitespace token.
+            if raw_type == 'WHITESPACE':
+                continue
+
+            # Resolve the token value and type and create the token itself.
+            handler = self.TOKENS[raw_type]['handler']
+            token_value = handler(raw_value)
+            token_type = TokenType.NUMBER if raw_type in ('FLOAT', 'INTEGER') else TokenType[raw_type]
+            token = Token(token_type, token_value, start_index)
+
             self._logger.debug("Scanned token: %s", token)
             yield token
 
-        eof_token = Token(TokenType.EOF, None, self._line_number)
-        self._logger.info("Tokenization complete. Generated EOF token.")
-        yield eof_token
-
-    def _peek(self) -> str | None:
-        if self._index >= len(self._json_str):
-            return None
-        return self._json_str[self._index]
-
-    def _consume(self) -> str | None:
-        char = self._peek()
-        if char:
-            if char == '\n':
-                self._line_number += 1
-            self._index += 1 # Advancing the index "consumes" the character.
-        return char
-
-    def _expect_sequence(self, expected: str):
-        """Consumes the expected string from the input or raises an error."""
-        for char in expected:
-            actual = self._consume()
-            if actual != char:
-                raise LiteralError(f"Expected '{expected}' but found '{actual}' on line {self._line_number}")
-
-    def _scan_true(self) -> Token:
-        self._expect_sequence("true")
-        return Token(TokenType.TRUE, True, self._line_number)
-
-    def _scan_false(self) -> Token:
-        self._expect_sequence("false")
-        return Token(TokenType.FALSE, False, self._line_number)
-
-    def _scan_null(self) -> Token:
-        self._expect_sequence("null")
-        return Token(TokenType.NULL, None, self._line_number)
-
-    def _consume_whitespace(self):
-        while (JsonLexer.is_whitespace(self._peek())):
-            self._consume()
-
-    def _scan_string(self) -> Token:
-        """Scans a JSON string and returns the associated token."""
-
-        self._consume()  # Consume the opening double quote (")
-
-        chars = []
-        while True:
-
-            char = self._peek()
-            match char:
-
-                case None:
-                    raise StringEndError(f"Unexpected end of input inside string on line {self._line_number}")
-
-                case '"':
-                    self._consume()  # Consume the closing double quote (")
-                    break
-
-                case '\\':
-                    self._consume()  # Consume the escape (\)
-
-                    # [Lookahead: Escape Sequences]
-                    # Encountering a backslash triggers a lookahead to determine if the sequence is a single-character
-                    # escape (like \n) or a fixed-width unicode sequence (like \uXXXX).
-                    if self.is_escapable(escaped_char := self._consume()):
-                        chars.append(JsonLexer.JSON_ESCAPES[escaped_char])
-
-                    elif escaped_char == 'u':
-                        # Handle \uXXXX hex escapes
-                        hex_digits = "".join([self._consume() or "" for _ in range(4)])
-                        if len(hex_digits) < 4:
-                            raise CharacterError(f"Invalid unicode escape sequence on line {self._line_number}")
-                        try:
-                            chars.append(chr(int(hex_digits, 16)))
-                        except ValueError as e:
-                            raise CharacterError( f"Invalid hex in unicode escape on line {self._line_number}") from e
-
-                    else:
-                        raise CharacterError(f"Invalid escape sequence '\\{escaped_char}' on line {self._line_number}")
-
-                case _ if self.is_forbidden(char):
-                    raise CharacterError(f"Invalid character '{char}' in string on line {self._line_number}")
-
-                case _:
-                    chars.append(self._consume())
-
-        return Token(TokenType.STRING, "".join(chars), self._line_number)
-
-    def _scan_number(self) -> Token:
-        """Scans a JSON number and returns its value as an int or float."""
-
-        start_index = self._index
-
-        # 1. Optional minus sign
-        if self._peek() == '-':
-            self._consume()
-
-        # 2. Integer part
-        char = self._peek()
-        if char == '0':
-            self._consume()
-        elif self.is_onenine(char):
-            self._consume()
-            while (c := self._peek()) and self.is_decimal(c):
-                self._consume()
-        else:
-            raise NumberError(f"Expected a digit at line {self._line_number}")
-
-        # 3. Optional fractional part
-        is_float = False
-        if self._peek() == '.':
-            is_float = True
-            self._consume()
-            if not (c := self._peek()) or not self.is_decimal(c):
-                raise NumberError(f"Expected a digit after '.' at line {self._line_number}")
-            while (c := self._peek()) and self.is_decimal(c):
-                self._consume()
-
-        # 4. Optional exponent part
-        if (char := self._peek()) and char in "eE":
-            is_float = True
-            self._consume()
-            if (c := self._peek()) and c in "+-":
-                self._consume()
-            if not (c := self._peek()) or not self.is_decimal(c):
-                raise NumberError(f"Expected a digit in exponent at line {self._line_number}")
-            while (c := self._peek()) and self.is_decimal(c):
-                self._consume()
-
-        # 5. Conversion
-        num_str = self._json_str[start_index:self._index]
-        try:
-            val = float(num_str) if is_float else int(num_str)
-            return Token(TokenType.NUMBER, val, self._line_number)
-        except ValueError as e:
-            raise NumberError(f"Invalid number format '{num_str}' at line {self._line_number}") from e
-
-    def _scan_lbrace(self) -> Token:
-        self._consume()
-        return Token(TokenType.LBRACE, "{", self._line_number)
-
-    def _scan_rbrace(self) -> Token:
-        self._consume()
-        return Token(TokenType.RBRACE, "}", self._line_number)
-
-    def _scan_lbracket(self) -> Token:
-        self._consume()
-        return Token(TokenType.LBRACKET, "[", self._line_number)
-
-    def _scan_rbracket(self) -> Token:
-        self._consume()
-        return Token(TokenType.RBRACKET, "]", self._line_number)
-
-    def _scan_comma(self) -> Token:
-        self._consume()
-        return Token(TokenType.COMMA, ",", self._line_number)
-
-    def _scan_colon(self) -> Token:
-        self._consume()
-        return Token(TokenType.COLON, ":", self._line_number)
-
-    def _get_next_token(self) -> Token:
-        """Identifies and returns the next token from the character stream."""
-
-        char = self._peek()
-        match char:
-
-            case '{':
-                token = self._scan_lbrace()
-
-            case '}':
-                token = self._scan_rbrace()
-
-            case '[':
-                token = self._scan_lbracket()
-
-            case ']':
-                token = self._scan_rbracket()
-
-            case ',':
-                token = self._scan_comma()
-
-            case ':':
-                token = self._scan_colon()
-
-            case '"':
-                token = self._scan_string()
-
-            case 't':
-                token = self._scan_true()
-
-            case 'f':
-                token = self._scan_false()
-
-            case 'n':
-                token = self._scan_null()
-
-            case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9':
-                token = self._scan_number()
-
-            case _:
-                raise UnexpectedCharacterError(f"Unexpected character '{char}' at line {self._line_number}")
-
-        return token
+        yield Token(TokenType.EOF, None, self._index)
