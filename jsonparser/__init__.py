@@ -10,6 +10,8 @@ This module imports and exposes the main components of the jsonparser package:
 Importing this package provides direct access to these core classes and error types.
 """
 
+__version__ = "0.2.0"
+
 from .lexer import JsonLexer
 from .parser import JsonParser
 from .tokens import Token

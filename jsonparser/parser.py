@@ -38,15 +38,15 @@ class JsonParser():
         # The main stack holds tokens shifted in from the lexer and aggregated values reduced from objects and arrays.
         self._main_stack = Stack()
 
-        # [Architecture: Reduce Optimization]
-        # The open_stack acts as a metadata "side-car". It stores the absolute index of every '{' or '[' currently on
+        # The open_stack stores the absolute index of the opening container token (that is, '{' or '[') currently on
         # the main_stack. This allows O(1) lookups of matching containers and O(1) calculation of how many tokens to
-        # pop during a reduction, bypassing the need for a linear scan-back through the main stack.
+        # pop during a reduction, bypassing the need for a linear scan-back through the main stack to find the opening
+        # container token.
         self._open_stack = Stack()
 
         self._logger = logging.getLogger(__name__)
 
-    def _handle_object(self):
+    def _handle_object_reduction(self):
         """Handles the construction of the dictionary from the JSON object when a right brace token is encountered."""
 
         # Get the the most recent opening token from the open stack. This should be the left brace corresponding to the
@@ -62,7 +62,6 @@ class JsonParser():
         # Pop everything off the main stack in FIFO order from the first left brace to the top of the stack.
         token_array = self._main_stack.pop_from_index(index)
 
-        # [Grammar Validation State Machine]
         # The 'expected' variable drives the validation logic while iterating through the tokens of a JSON object. The
         # initial state for a JSON object is to expect an opening left brace.
         expected = TokenType.LBRACE
@@ -140,7 +139,7 @@ class JsonParser():
         # Replace the entire array sequence on the main stack with a list represented as a single VALUE token.
         self._main_stack.push(Token(TokenType.VALUE, dictionary, token_array[0].line))
 
-    def _handle_array(self):
+    def _handle_array_reduction(self):
         """Handles the construction of the list from the JSON array when a right bracket token is encountered."""
 
         # Get the the most recent opening token from the open stack. This should be the left bracket corresponding to
@@ -156,7 +155,6 @@ class JsonParser():
         # Pop everything off the main stack in FIFO order from the first left bracket to the top of the stack.
         token_array = self._main_stack.pop_from_index(index)
 
-        # [Grammar Validation State Machine]
         # The 'expected' variable drives the validation logic while iterating through the tokens of a JSON array. The
         # starting condition for a JSON array is to expect an opening left bracket.
         expected = TokenType.LBRACKET
@@ -201,7 +199,7 @@ class JsonParser():
             # [,<value>]
             elif TokenType.VALUE is expected and token.type is TokenType.COMMA and not array:
                 raise LeadingCommaError("Unexpected leading comma")
-            
+
             # [<string>: <value>]
             elif token.type is TokenType.COLON:
                 raise UnexpectedColonError("Unexpected colon in array.")
@@ -255,10 +253,10 @@ class JsonParser():
             match token.type:
 
                 case TokenType.RBRACE:
-                    self._handle_object()
+                    self._handle_object_reduction()
 
                 case TokenType.RBRACKET:
-                    self._handle_array()
+                    self._handle_array_reduction()
 
                 case TokenType.LBRACE | TokenType.LBRACKET:
                     self._handle_opening_token()

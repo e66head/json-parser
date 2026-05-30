@@ -1,6 +1,6 @@
 [project]
 name = "jsonparser"
-version = "0.0.1"
+dynamic = ["version"]
 description = "A custom JSON parser written in Python for educational purposes."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest"]
+
+[tool.setuptools.dynamic]
+version = {attr = "jsonparser.__version__"}
 
 [build-system]
 requires = ["setuptools>=61.0"]

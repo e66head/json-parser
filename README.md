@@ -1,6 +1,6 @@
 # JSON Parser
 
-A pure-Python JSON lexer and parser written from scratch for educational and practical use.
+A pure-Python [JSON](https://www.json.org/json-en.html) lexer and parser written from scratch for educational and practical use.
 
 This code is in active development. See the [ROADMAP](ROADMAP.md) for planned features such as JSONC and JSON5 support.
 While it is fully compliant with the JSON specification (RFC 8259), it should be considered educational in nature.
@@ -22,7 +22,7 @@ print(data)
 The package can be run directly as a utility:
 
 ```shell
-python -m jsonparser [options] [file]
+python -m jsonparser [options] [json-file]
 ```
 
 **Common Examples:**
@@ -44,7 +44,6 @@ python -m jsonparser [options] [file]
 | `--silent`   | `-s`  | Suppress data output to the console                           |
 | `--log`      | `-l`  | Set log level (CRITICAL, ERROR, WARNING, INFO, DEBUG)         |
 | `--log-file` |       | Path to a file where logs will be written                     |
-
 
 ## Unit Testing
 
@@ -69,7 +68,6 @@ If you are debugging a specific area, you can run individual test files:
 | **Compliance Suite** | `pytest tests/test_suite_runner.py`  |
 
 **Debugging:** Add `--log-cli-level=DEBUG` to any of the above commands to see detailed internal state transitions and tokenization logs during the test run.
-
 
 ## License
 
