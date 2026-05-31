@@ -1,8 +1,9 @@
 # JSON Parser
 
-A pure-Python [JSON](https://www.json.org/json-en.html) lexer and parser written from scratch for educational and practical use.
+A pure-Python [JSON](https://www.json.org/json-en.html) lexer and parser written from scratch for educational and
+practical use. It has "opt in" for C-style comments.
 
-This code is in active development. See the [ROADMAP](ROADMAP.md) for planned features such as JSONC and JSON5 support.
+This code is in active development. See the [ROADMAP](ROADMAP.md) for planned features (including support for JSON5).
 While it is fully compliant with the JSON specification (RFC 8259), it should be considered educational in nature.
 
 ## Usage
@@ -38,6 +39,8 @@ python -m jsonparser [options] [json-file]
 | :----------- | :---- | :------------------------------------------------------------ |
 | `--help`     | `-h`  | Show the help message and exit                                |
 | `--version`  | `-v`  | Show the program's version number and exit                    |
+| `--dialect`  | `-d`  | Choose the JSON dialect (STRICT, JSONC, or JSON5)             |
+| `--comments` | `-c`  | Allow comments (this is the same as --dialect=JSONC)          |
 | `--output`   | `-o`  | Path to a file where the parsed Python object will be written |
 | `--pickle`   | `-p`  | Output as a binary Pickle file (auto-names if -o is omitted)  |
 | `--time`     | `-t`  | Time the parsing operation and report duration to stderr      |
@@ -47,7 +50,8 @@ python -m jsonparser [options] [json-file]
 
 ## Unit Testing
 
-This project uses the "test_parsing" files from the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite) by Nicolas Seriot (licensed under the MIT License) to ensure full compliance with the JSON specification.
+This project uses the "test_parsing" files from the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite) by
+Nicolas Seriot (licensed under the MIT License) to ensure full compliance with the JSON specification.
 
 ### Running Tests
 
@@ -65,9 +69,21 @@ If you are debugging a specific area, you can run individual test files:
 | :------------------- | :----------------------------------- |
 | **Lexer**            | `pytest tests/test_lexer.py`         |
 | **Parser**           | `pytest tests/test_parser.py`        |
+| **Performance**      | `pytest tests/test_performance.py`   |
 | **Compliance Suite** | `pytest tests/test_suite_runner.py`  |
 
-**Debugging:** Add `--log-cli-level=DEBUG` to any of the above commands to see detailed internal state transitions and tokenization logs during the test run.
+**Debugging:** Add `--log-cli-level=DEBUG` to any of the above commands to see detailed internal state transitions and
+tokenization logs during the test run.
+
+Note that running the performance testing allows specifying how big the JSON data set is in terms of its "depth" and
+"breadth". To run with custom values:
+
+```shell
+python -m pytest  tests/test_performance.py --depth 1000 --breadth 1000 -s
+```
+
+This will compare the performance of this implementation against the performance of the standard JSON library. The `-s`
+option is required to report the results to the console.
 
 ## License
 
