@@ -7,7 +7,7 @@ converts it into Python objects.
 
 import logging
 
-from .lexer import JsonLexer
+from .lexer import JsonLexer, JsonDialect
 from .errors import (
     ExtraColonError,
     ExtraCommaError,
@@ -32,8 +32,12 @@ from .tokens import Token, TokenType
 class JsonParser():
     """A simple JSON parser that uses the JSON lexer to parse JSON strings."""
 
-    def __init__(self, json_str):
-        self._lexer = JsonLexer(json_str)
+    def __init__(self, json_str, allow_comments=None, dialect=JsonDialect.JSON):
+
+        # If allow_comments is defined, then the lexer will be set to either JSON or JSONC.
+        if allow_comments is not None:
+            dialect = JsonDialect.JSONC if allow_comments else JsonDialect.JSON
+        self._lexer = JsonLexer(json_str, dialect=dialect)
 
         # The main stack holds tokens shifted in from the lexer and aggregated values reduced from objects and arrays.
         self._main_stack = Stack()

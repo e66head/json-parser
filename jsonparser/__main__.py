@@ -13,8 +13,9 @@ import sys
 import time
 
 from . import __version__
-from .parser import JsonParser
 from .errors import JsonParserError, JsonLexerError
+from .lexer import JsonDialect
+from .parser import JsonParser
 
 def setup_logging(level: str, filename: str = None):
     """
@@ -41,6 +42,17 @@ def parse_args(args):
         "-v", "--version",
         action="version",
         version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "-d", "--dialect",
+        choices=["JSON", "JSONC", "JSON5"],
+        default="JSON",
+        help="Set the JSON dialect (default: JSON) (Note: JSON5 is not supported yet.)"
+    )
+    parser.add_argument(
+        "-c", "--comments",
+        action="store_true",
+        help="Allow comments in the JSON input (This is identical to --dialect=JSONC) (default: False)"
     )
     parser.add_argument(
         "-l", "--log",
@@ -90,10 +102,10 @@ def main(args):
     logger = logging.getLogger(__name__)
     logger.debug("Starting JSON parser CLI.")
 
-    # Determine the effective output path
+    # Determine the output path
     output_path = parsed_args.output
     if parsed_args.pickle and not output_path:
-        # If reading from stdin, we use a generic name, otherwise we base it on the input filename.
+        # If reading from stdin, use a generic name, otherwise base it on the input filename.
         if parsed_args.file is sys.stdin:
             output_path = "output.pkl"
         else:
@@ -102,7 +114,14 @@ def main(args):
     try:
         content = parsed_args.file.read()
 
-        parser = JsonParser(content)
+        allow_comments = True if parsed_args.comments else None
+        dialect = {
+            "JSON": JsonDialect.JSON,
+            "JSONC": JsonDialect.JSONC,
+            "JSON5": JsonDialect.JSON5
+        }[parsed_args.dialect]
+
+        parser = JsonParser(content, allow_comments, dialect)
 
         start_time = time.perf_counter()
         result = parser.parse()
@@ -120,7 +139,7 @@ def main(args):
                 with open(output_path, "w", encoding="utf-8") as f:
                     pprint.pprint(result, stream=f)
                 logger.info("Pretty-printed output written to %s", output_path)
-        
+
         # Only print to console if no output (explicit or automatic) was requested
         if not parsed_args.silent and not output_path:
             pprint.pprint(result)

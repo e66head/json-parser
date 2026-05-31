@@ -5,7 +5,7 @@ handle very large files efficiently and support more flexible formats like JSONC
 
 ## Phase 1: Supporting Other JSONs
 
-- [ ] **JSONC**: Extend the Lexer to support and ignore both single-line (`//`) and multi-line (`/* */`) comments.
+- [x] **JSONC**: Extend the Lexer to support and ignore both single-line (`//`) and multi-line (`/* */`) comments.
 - [ ] **JSON5**:
   - [ ] **Strings**: Support single-quoted (') strings.
   - [ ] **Objects**: Support unquoted and reserved-word keys; allow trailing commas.
